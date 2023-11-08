@@ -31,6 +31,7 @@ import metrics as metrics
 benchmark_name = "HHL"
 
 np.random.seed(0)
+nmax = 10
 
 verbose = False
 
@@ -605,20 +606,22 @@ def analyze_and_print_result (qc, result, num_qubits, s_int, num_shots):
     b = 0
     
     # remove instance index from s_int
-    s_int = s_int - 1000 * int(s_int/1000)
+    # s_int = s_int - 1000 * int(s_int/1000)
     
-    # get off_diag_index and b
-    s_int_o = int(s_int)
-    s_int_b = int(s_int)   
+    # # get off_diag_index and b
+    # s_int_o = int(s_int)
+    # s_int_b = int(s_int)   
     
-    while (s_int_o % 2) == 0:
-        s_int_o = int(s_int_o/2)
-        off_diag_index += 1
+    # while (s_int_o % 2) == 0:
+    #     s_int_o = int(s_int_o/2)
+    #     off_diag_index += 1
         
-    while (s_int_b % 3) == 0:
-        s_int_b = int(s_int_b/3)
-        b += 1
+    # while (s_int_b % 3) == 0:
+    #     s_int_b = int(s_int_b/3)
+    #     b += 1
     
+    bit = np.binary_repr(s_int, 5 + 2*nmax)
+    i, b, off_diag_index = int(bit[:5], 2), int(bit[5:nmax+5], 2), int(bit[nmax+5:], 2)
     if verbose:
         print(f"... rem(s_int) = {s_int}, b = {b}, odi = {off_diag_index}")
         
@@ -628,7 +631,7 @@ def analyze_and_print_result (qc, result, num_qubits, s_int, num_shots):
     A = shs.generate_sparse_H(num_input_qubits, off_diag_index,
                               diag_el=diag_el, off_diag_el=off_diag_el)
     ideal_distr = true_distr(A, b)
-      
+
     # # compute total variation distance
     # tvd = TVD(ideal_distr, post_counts)
     
@@ -800,9 +803,16 @@ def run2 (min_input_qubits=1, max_input_qubits=3, skip_qubits=1,
                 off_diag_index = np.random.choice(range(1, N))
                 
                 # define secret_int (include 'i' since b and off_diag_index don't need to be unique)
-                s_int = 1000 * (i+1) + (2**off_diag_index)*(3**b)
+                # s_int = 1000 * (i+1) + (2**off_diag_index)*(3**b)
                 #s_int = (2**off_diag_index)*(3**b)
-                
+                s_int = int(''.join(
+                    [
+                        np.binary_repr(i, 5),
+                        np.binary_repr(b, nmax), 
+                        np.binary_repr(off_diag_index, nmax)
+                    ]
+                ), 2)
+
                 if verbose:
                     print(f"... create A for b = {b}, off_diag_index = {off_diag_index}, s_int = {s_int}")
                 
